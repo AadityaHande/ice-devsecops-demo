@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Intentionally insecure S3 configuration used only for static IaC scanning.
+Resources:
+  DemoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead

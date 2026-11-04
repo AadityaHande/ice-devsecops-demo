@@ -1,0 +1,76 @@
+version: 0.2
+
+env:
+  parameter-store:
+    SNYK_TOKEN: "/CodeBuild/devsecops-demo/snyk-token"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "Installing application dependencies..."
+      - npm install --ignore-scripts --no-audit --no-fund
+      - echo "Installing Snyk CLI..."
+      - npm install --global snyk
+
+  pre_build:
+    commands:
+      - echo "Checking Snyk CLI..."
+      - snyk --version
+      - echo "Snyk authentication is supplied through the SNYK_TOKEN environment variable."
+
+  build:
+    commands:
+      - |
+        set +e
+        echo "=================================================="
+        echo "SCA CHECK: Open-source dependency vulnerabilities"
+        echo "=================================================="
+        snyk test --severity-threshold=medium
+        SCA_STATUS=$?
+
+        echo "=================================================="
+        echo "IaC CHECK: Infrastructure configuration"
+        echo "=================================================="
+        snyk iac test infra/s3-bucket.yaml --severity-threshold=medium
+        IAC_STATUS=$?
+        set -e
+
+        POLICY_FAILED=0
+        TOOL_FAILED=0
+
+        if [ "$SCA_STATUS" -eq 0 ]; then
+          echo "SCA_RESULT=PASS"
+        elif [ "$SCA_STATUS" -eq 1 ]; then
+          echo "SCA_RESULT=POLICY_FINDINGS"
+          POLICY_FAILED=1
+        else
+          echo "SCA_RESULT=TOOL_OR_CONFIGURATION_ERROR (exit $SCA_STATUS)"
+          TOOL_FAILED=1
+        fi
+
+        if [ "$IAC_STATUS" -eq 0 ]; then
+          echo "IAC_RESULT=PASS"
+        elif [ "$IAC_STATUS" -eq 1 ]; then
+          echo "IAC_RESULT=POLICY_FINDINGS"
+          POLICY_FAILED=1
+        else
+          echo "IAC_RESULT=TOOL_OR_CONFIGURATION_ERROR (exit $IAC_STATUS)"
+          TOOL_FAILED=1
+        fi
+
+        if [ "$TOOL_FAILED" -ne 0 ]; then
+          echo "SECURITY_PIPELINE_RESULT=ERROR"
+          echo "A scanner or configuration error occurred. Review logs; this is not proof of a vulnerability."
+          exit 2
+        fi
+
+        if [ "$POLICY_FAILED" -ne 0 ]; then
+          echo "SECURITY_PIPELINE_RESULT=FAILED_POLICY"
+          echo "Remediate the reported findings and run the pipeline again."
+          exit 1
+        fi
+
+        echo "SECURITY_PIPELINE_RESULT=PASSED"
+        echo "Both scans completed without findings at or above the configured threshold."

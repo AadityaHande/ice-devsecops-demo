@@ -1,0 +1,13 @@
+{
+  "name": "ice-devsecops-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Educational DevSecOps demonstration inspired by AWS re:Invent SEC211",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "minimist": "0.0.8"
+  }
+}
