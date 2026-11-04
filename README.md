@@ -1,4 +1,4 @@
-# ICE DevSecOps Demonstration (Student Implementation)
+# ICE DevSecOps Demonstration (Implementation)
 
 A small, real CI security pipeline inspired by the developer-focused DevSecOps principles discussed in AWS re:Invent 2024 session SEC211: *How ICE implemented a developer-focused DevSecOps workflow*.
 
